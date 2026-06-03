@@ -33,3 +33,5 @@ Thumbs.db
 /resources/views/vendor/
 
 /.run/
+
+/stubs/
