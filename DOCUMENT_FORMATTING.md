@@ -1,0 +1,35 @@
+## DEED OF ABSOLUTE SALE
+- Executed Between
+  - Vendee & Vendor
+    - More than 1
+    - Attorney-in-Fact (optional)
+  - exclusion: "legal age", Citizenship, marital status (married to whom if applicable)
+  - Principal listed first, then husband/wife if applicable, then attorney-in-fact if applicable
+- Parcel of Lands
+  - More than 1
+  - Parcel of Land 
+    - Parcel description
+    - Situated In
+      - Barangay, City of, Province of, Island of
+    - Bounded on
+      - compass points (N, S, E, W)
+      - landmarks (if applicable)
+      - semicolon-separated
+      - Wide in meters (0.00 M. Wide)
+    - Containing Area of 
+      - ex. ONE (ONE) SQAURE METERS
+- Consideration
+  - Amount in words and figures
+    - ex. ONE HUNDRED THOUSAND (P100,000.00) PESOS
+    - Philippine Currency
+- Parties' Signatures
+  - Two column table format
+    - Left: Vendor(s) and/or Attorney-in-Fact (if applicable)
+    - Right: Vendee(s) and/or Attorney-in-Fact (if applicable)
+    - Name and vendor/vendee/attorney-in-fact
+- Signed in the presence of 
+  - Two column table format
+    - Underline only for witness names
+- Acknowledgment
+  - Two Principals with ID No. field
+ 
