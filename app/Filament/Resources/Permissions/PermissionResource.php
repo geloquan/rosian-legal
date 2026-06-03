@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Permissions;
 
 use App\Filament\Resources\Permissions\Pages\ManagePermissions;
+use App\NavigationGroup;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -29,6 +30,7 @@ class PermissionResource extends Resource
   protected static ?string $model = Permission::class;
 
   protected static string|BackedEnum|null $navigationIcon = Heroicon::ShieldCheck;
+  protected static string | \UnitEnum | null $navigationGroup = NavigationGroup::Management;
 
   public static function form(Schema $schema): Schema
   {

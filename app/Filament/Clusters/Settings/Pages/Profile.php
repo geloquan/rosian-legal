@@ -3,6 +3,7 @@
 namespace App\Filament\Clusters\Settings\Pages;
 
 use App\Filament\Clusters\Settings\SettingsCluster;
+use App\NavigationGroup;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -20,7 +21,7 @@ class Profile extends Page implements HasForms
   protected static ?string $navigationLabel = 'My Profile';
   protected static ?string $title = 'My Profile';
   protected string $view = 'filament.clusters.settings.pages.profile';
-
+  protected static string | \UnitEnum | null $navigationGroup = NavigationGroup::Settings;
   protected static ?string $cluster = SettingsCluster::class;
 
   public ?array $data = [];
@@ -38,13 +39,6 @@ class Profile extends Page implements HasForms
           ->description('Update your personal details.')
           ->icon('heroicon-o-user')
           ->schema([
-            FileUpload::make('avatar')
-              ->image()
-              ->avatar()
-              ->disk('public')
-              ->directory('avatars')
-              ->columnSpanFull(),
-
             TextInput::make('name')
               ->required()
               ->maxLength(255),
@@ -61,7 +55,6 @@ class Profile extends Page implements HasForms
           ->schema([
             TextInput::make('current_password')
               ->password()
-              ->revealable()
               ->currentPassword(),
 
             TextInput::make('password')

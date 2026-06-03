@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Roles;
 
 use App\Filament\Resources\Roles\Pages\ManageRoles;
+use App\NavigationGroup;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -30,6 +31,7 @@ class RoleResource extends Resource
   protected static ?string $model = Role::class;
 
   protected static string|BackedEnum|null $navigationIcon = Heroicon::GlobeAlt;
+  protected static string | \UnitEnum | null $navigationGroup = NavigationGroup::Management;
 
   public static function form(Schema $schema): Schema
   {

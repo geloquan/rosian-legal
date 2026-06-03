@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Users;
 
 use App\Filament\Resources\Users\Pages\ManageUsers;
 use App\Models\User;
+use App\NavigationGroup;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -31,6 +32,7 @@ class UserResource extends Resource
   protected static ?string $model = User::class;
 
   protected static string|BackedEnum|null $navigationIcon = Heroicon::Users;
+  protected static string | \UnitEnum | null $navigationGroup = NavigationGroup::Management;
 
   public static function form(Schema $schema): Schema
   {

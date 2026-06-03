@@ -4,6 +4,7 @@ namespace App\Filament\Resources\PrinterConnections;
 
 use App\Filament\Resources\PrinterConnections\Pages\ManagePrinterConnections;
 use App\Models\PrinterConnection;
+use App\NavigationGroup;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -33,6 +34,7 @@ class PrinterConnectionResource extends Resource
   protected static ?string $model = PrinterConnection::class;
 
   protected static string|BackedEnum|null $navigationIcon = Heroicon::Printer;
+  protected static string | \UnitEnum | null $navigationGroup = NavigationGroup::Management;
 
   public static function form(Schema $schema): Schema
   {
