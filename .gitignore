@@ -29,3 +29,7 @@ Thumbs.db
 /public/js/filament
 
 .run/
+
+/resources/views/vendor/
+
+/.run/
