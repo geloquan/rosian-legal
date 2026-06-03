@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="serve" type="PhpLocalRunConfigurationType" factoryName="PHP Console" path="$PROJECT_DIR$/artisan" scriptParameters="serve">
+  <configuration default="false" name="config:cache" type="PhpLocalRunConfigurationType" factoryName="PHP Console" activateToolWindowBeforeRun="false" singleton="false" path="$PROJECT_DIR$/artisan" scriptParameters="config:cache">
     <CommandLine>
       <envFiles>
         <find>$PROJECT_DIR$/.env</find>
