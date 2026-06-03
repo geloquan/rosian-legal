@@ -29,7 +29,7 @@ class RoleResource extends Resource
 {
   protected static ?string $model = Role::class;
 
-  protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+  protected static string|BackedEnum|null $navigationIcon = Heroicon::GlobeAlt;
 
   public static function form(Schema $schema): Schema
   {
@@ -87,5 +87,10 @@ class RoleResource extends Resource
       ->withoutGlobalScopes([
         SoftDeletingScope::class,
       ]);
+  }
+
+  public static function canAccess(): bool
+  {
+    return auth()->user()->hasAnyRole(['super-admin']);
   }
 }
