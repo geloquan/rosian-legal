@@ -15,8 +15,8 @@ return new class extends Migration {
       $table->string('name');
       $table->string('ip_address');
       $table->integer('port');
-      $table->foreignId('created_by')->constrained('users')->onDelete('constraint');
-      $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('constraint');
+      $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
+      $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
       $table->softDeletes();
       $table->timestamps();
     });
