@@ -18,7 +18,12 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpWord\IOFactory;
+use PhpOffice\PhpWord\TemplateProcessor;
+use Throwable;
 
 class Template extends Page implements HasForms, HasTable
 {
@@ -74,14 +79,16 @@ class Template extends Page implements HasForms, HasTable
   {
     return $table
       ->query(DeedOfAbsoluteSaleTemplate::query())
+      ->recordAction('preview')
       ->columns([
         TextColumn::make('id')
           ->label('ID')
           ->sortable(),
         TextColumn::make('document_reference_attachment')
           ->label('File')
+          ->formatStateUsing(fn(mixed $state) => basename((string) ($this->extractAttachmentPath($state) ?? '')))
           ->limit(40)
-          ->tooltip(fn($state) => $state),
+          ->tooltip(fn(mixed $state) => $this->extractAttachmentPath($state)),
         TextColumn::make('created_at')
           ->label('Created At')
           ->since()
@@ -94,6 +101,16 @@ class Template extends Page implements HasForms, HasTable
           ->tooltip(fn($state) => $state),
       ])
       ->recordActions([
+        Action::make('preview')
+          ->label('Preview')
+          ->icon(Heroicon::Eye)
+          ->modalHeading(fn(DeedOfAbsoluteSaleTemplate $record) => 'Template #' . $record->id)
+          ->modalSubmitAction(false)
+          ->modalCancelActionLabel('Close')
+          ->modalWidth('7xl')
+          ->modalContent(function (DeedOfAbsoluteSaleTemplate $record): View {
+            return view('filament.clusters.documents.deed-of-absolute-sale-cluster.pages.template-preview', $this->buildPreviewData($record));
+          }),
         Action::make('delete')
           ->label('Delete')
           ->icon(Heroicon::Trash)
@@ -132,5 +149,71 @@ class Template extends Page implements HasForms, HasTable
               ]),
           ]),
       ]);
+  }
+
+  protected function buildPreviewData(DeedOfAbsoluteSaleTemplate $record): array
+  {
+    $attachmentPath = $this->extractAttachmentPath($record->document_reference_attachment);
+
+    if (!$attachmentPath || !Storage::disk('public')->exists($attachmentPath)) {
+      return [
+        'fileName' => null,
+        'variables' => [],
+        'previewHtml' => null,
+        'errorMessage' => 'Template file is missing from storage.',
+      ];
+    }
+
+    $absolutePath = Storage::disk('public')->path($attachmentPath);
+    $variables = [];
+    $previewHtml = null;
+    $errorMessage = null;
+
+    try {
+      $templateProcessor = new TemplateProcessor($absolutePath);
+      $variables = collect($templateProcessor->getVariables())
+        ->filter(fn(mixed $variable) => filled($variable))
+        ->map(fn(mixed $variable) => (string) $variable)
+        ->unique()
+        ->sort()
+        ->values()
+        ->all();
+    } catch (Throwable) {
+      $errorMessage = 'Unable to detect template variables.';
+    }
+
+    try {
+      $phpWord = IOFactory::load($absolutePath, 'Word2007');
+      $writer = IOFactory::createWriter($phpWord, 'HTML');
+      ob_start();
+      $writer->save('php://output');
+      $previewHtml = ob_get_clean() ?: null;
+    } catch (Throwable) {
+      $errorMessage = $errorMessage ?? 'Unable to render document preview.';
+    }
+
+    return [
+      'fileName' => basename($attachmentPath),
+      'variables' => $variables,
+      'previewHtml' => $previewHtml,
+      'errorMessage' => $errorMessage,
+    ];
+  }
+
+  protected function extractAttachmentPath(mixed $attachment): ?string
+  {
+    if (is_string($attachment) && filled($attachment)) {
+      return $attachment;
+    }
+
+    if (is_array($attachment)) {
+      $path = data_get($attachment, '0') ?? data_get($attachment, 'path');
+
+      if (is_string($path) && filled($path)) {
+        return $path;
+      }
+    }
+
+    return null;
   }
 }
