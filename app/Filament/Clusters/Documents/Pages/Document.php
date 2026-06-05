@@ -5,6 +5,7 @@ namespace App\Filament\Clusters\Documents\Pages;
 use App\Filament\Clusters\Documents\DeedOfAbsoluteSaleCluster;
 use App\Models\DeedOfAbsoluteSaleDocument;
 use App\Models\DeedOfAbsoluteSaleTemplate;
+use App\PartyMemberRole;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
@@ -47,7 +48,10 @@ class Document extends Page implements HasForms, HasTable
 
   public function mount(): void
   {
-    $this->form->fill();
+    $this->form->fill([
+      'party_members'    => [],
+      'parcels_of_land'  => [],
+    ]);
   }
 
   protected function getHeaderActions(): array
@@ -248,6 +252,7 @@ class Document extends Page implements HasForms, HasTable
               ->required(),
             Repeater::make('party_members')
               ->label('Party Members')
+              ->key('party_members')
               ->hint('Two principals required: one Principal Vendor and one Principal Vendee.')
               ->hintColor('warning')
               ->hintIcon(Heroicon::InformationCircle)
@@ -257,13 +262,7 @@ class Document extends Page implements HasForms, HasTable
                   ->required(),
                 Select::make('role')
                   ->label('Role')
-                  ->options([
-                    'vendor'            => 'Vendor',
-                    'vendee'            => 'Vendee',
-                    'attorney-in-fact'  => 'Attorney-in-Fact',
-                    'principal-vendor'  => 'Principal Vendor',
-                    'principal-vendee'  => 'Principal Vendee',
-                  ])
+                  ->options(PartyMemberRole::class)
                   ->required(),
                 TextInput::make('city')
                   ->label('City'),
@@ -273,10 +272,10 @@ class Document extends Page implements HasForms, HasTable
               ->columns(2)
               ->addActionLabel('Add Party Member')
               ->defaultItems(0)
-              ->reorderable(false)
-              ->live(),
+              ->reorderable(false),
             Repeater::make('parcels_of_land')
               ->label('Parcels of Land')
+              ->key('parcels_of_land')
               ->columns(4)
               ->schema([
                 TextInput::make('transfer_certificate_number')
@@ -310,6 +309,7 @@ class Document extends Page implements HasForms, HasTable
                   ->required(),
                 Repeater::make('ordinal_directions')
                   ->label('Ordinal Directions')
+                  ->key('ordinal_directions')
                   ->columns(4)
                   ->columnSpanFull()
                   ->schema([
