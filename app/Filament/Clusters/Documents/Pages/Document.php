@@ -188,6 +188,8 @@ class Document extends Page implements HasForms, HasTable
                 ->map(fn($m) => [
                   'name' => $m->name,
                   'role' => $m->role,
+                  'city' => $m->city,
+                  'province' => $m->province,
                 ])
                 ->toArray(),
             ]);
@@ -215,7 +217,7 @@ class Document extends Page implements HasForms, HasTable
   public function form(Schema $schema): Schema
   {
     return $schema
-      ->statePath('documentData')
+      ->statePath('data')
       ->components([
         Section::make('Creating New Document')
           ->description('Fill in the details for the new document.')
@@ -252,7 +254,6 @@ class Document extends Page implements HasForms, HasTable
               ->required(),
             Repeater::make('party_members')
               ->label('Party Members')
-              ->key('party_members')
               ->hint('Two principals required: one Principal Vendor and one Principal Vendee.')
               ->hintColor('warning')
               ->hintIcon(Heroicon::InformationCircle)
@@ -275,7 +276,6 @@ class Document extends Page implements HasForms, HasTable
               ->reorderable(false),
             Repeater::make('parcels_of_land')
               ->label('Parcels of Land')
-              ->key('parcels_of_land')
               ->columns(4)
               ->schema([
                 TextInput::make('transfer_certificate_number')
@@ -309,7 +309,6 @@ class Document extends Page implements HasForms, HasTable
                   ->required(),
                 Repeater::make('ordinal_directions')
                   ->label('Ordinal Directions')
-                  ->key('ordinal_directions')
                   ->columns(4)
                   ->columnSpanFull()
                   ->schema([
