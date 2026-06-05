@@ -48,10 +48,7 @@ class Document extends Page implements HasForms, HasTable
 
   public function mount(): void
   {
-    $this->form->fill([
-      'party_members'    => [],
-      'parcels_of_land'  => [],
-    ]);
+    $this->resetFormState();
   }
 
   protected function getHeaderActions(): array
@@ -61,7 +58,7 @@ class Document extends Page implements HasForms, HasTable
         ->label('New Document')
         ->icon(Heroicon::Document)
         ->action(function () {
-          $this->form->fill();
+          $this->resetFormState();
           $this->showForm = true;
         }),
     ];
@@ -115,7 +112,7 @@ class Document extends Page implements HasForms, HasTable
       ->send();
 
     $this->showForm = false;
-    $this->form->fill();
+    $this->resetFormState();
   }
 
   public function table(Table $table): Table
@@ -215,7 +212,7 @@ class Document extends Page implements HasForms, HasTable
   public function form(Schema $schema): Schema
   {
     return $schema
-      ->statePath('documentData')
+      ->statePath('data')
       ->components([
         Section::make('Creating New Document')
           ->description('Fill in the details for the new document.')
@@ -252,7 +249,6 @@ class Document extends Page implements HasForms, HasTable
               ->required(),
             Repeater::make('party_members')
               ->label('Party Members')
-              ->key('party_members')
               ->hint('Two principals required: one Principal Vendor and one Principal Vendee.')
               ->hintColor('warning')
               ->hintIcon(Heroicon::InformationCircle)
@@ -271,11 +267,11 @@ class Document extends Page implements HasForms, HasTable
               ])
               ->columns(2)
               ->addActionLabel('Add Party Member')
+              ->default([])
               ->defaultItems(0)
               ->reorderable(false),
             Repeater::make('parcels_of_land')
               ->label('Parcels of Land')
-              ->key('parcels_of_land')
               ->columns(4)
               ->schema([
                 TextInput::make('transfer_certificate_number')
@@ -309,7 +305,6 @@ class Document extends Page implements HasForms, HasTable
                   ->required(),
                 Repeater::make('ordinal_directions')
                   ->label('Ordinal Directions')
-                  ->key('ordinal_directions')
                   ->columns(4)
                   ->columnSpanFull()
                   ->schema([
@@ -349,9 +344,21 @@ class Document extends Page implements HasForms, HasTable
                   ]),
               ])
               ->addActionLabel('Add Parcel of Land')
+              ->default([])
               ->defaultItems(0)
               ->live(),
           ]),
       ]);
+  }
+
+  protected function resetFormState(): void
+  {
+    $this->form->fill([
+      'uuid' => null,
+      'sale_price' => null,
+      'deed_of_absolute_sale_template_id' => null,
+      'party_members' => [],
+      'parcels_of_land' => [],
+    ]);
   }
 }
