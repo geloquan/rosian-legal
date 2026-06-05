@@ -20,14 +20,22 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\TemplateProcessor;
+use Symfony\Component\HtmlSanitizer\HtmlSanitizer;
+use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
 use Throwable;
+use ZipArchive;
 
 class Template extends Page implements HasForms, HasTable
 {
   use InteractsWithForms, InteractsWithTable;
+
+  protected const TEMPLATE_PREVIEW_CACHE_KEY_PREFIX = 'doas-template-preview';
+  protected const MAX_DOCX_SIZE_BYTES = 10 * 1024 * 1024;
+
   protected string $view = 'filament.clusters.documents.deed-of-absolute-sale-cluster.pages.template';
 
   protected static ?string $cluster = DeedOfAbsoluteSaleCluster::class;
@@ -86,9 +94,13 @@ class Template extends Page implements HasForms, HasTable
           ->sortable(),
         TextColumn::make('document_reference_attachment')
           ->label('File')
-          ->formatStateUsing(fn(mixed $state) => basename((string) ($this->extractAttachmentPath($state) ?? '')))
+          ->formatStateUsing(function (mixed $state): string {
+            $path = $this->extractAttachmentPath($state);
+
+            return filled($path) ? basename($path) : '';
+          })
           ->limit(40)
-          ->tooltip(fn(mixed $state) => $this->extractAttachmentPath($state)),
+          ->tooltip(fn(mixed $state) => basename($this->extractAttachmentPath($state) ?? '')),
         TextColumn::make('created_at')
           ->label('Created At')
           ->since()
@@ -164,39 +176,88 @@ class Template extends Page implements HasForms, HasTable
       ];
     }
 
+    $fileLastModified = Storage::disk('public')->lastModified($attachmentPath);
+    $cacheKey = sprintf('%s:%s:%s', self::TEMPLATE_PREVIEW_CACHE_KEY_PREFIX, $record->id, $fileLastModified);
+
+    return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($attachmentPath) {
+      return $this->generatePreviewData($attachmentPath);
+    });
+  }
+
+  protected function generatePreviewData(string $attachmentPath): array
+  {
     $absolutePath = Storage::disk('public')->path($attachmentPath);
+    $storageRoot = rtrim((string) realpath(Storage::disk('public')->path('/')), DIRECTORY_SEPARATOR);
+    $resolvedPath = realpath($absolutePath);
+
+    if (!$resolvedPath || !str_starts_with(strtolower($resolvedPath), strtolower($storageRoot . DIRECTORY_SEPARATOR))) {
+      return [
+        'fileName' => basename($attachmentPath),
+        'variables' => [],
+        'previewHtml' => null,
+        'errorMessage' => 'Template path is invalid.',
+      ];
+    }
+
+    $absolutePath = $resolvedPath;
+
+    if (!$this->isValidDocx($absolutePath)) {
+      return [
+        'fileName' => basename($attachmentPath),
+        'variables' => [],
+        'previewHtml' => null,
+        'errorMessage' => 'Uploaded file is not a valid DOCX template.',
+      ];
+    }
+
     $variables = [];
     $previewHtml = null;
-    $errorMessage = null;
+    $errors = [];
 
     try {
       $templateProcessor = new TemplateProcessor($absolutePath);
       $variables = collect($templateProcessor->getVariables())
-        ->filter(fn(mixed $variable) => filled($variable))
-        ->map(fn(mixed $variable) => (string) $variable)
+        ->filter(fn(mixed $variable) => is_scalar($variable))
+        ->map(fn(mixed $variable) => trim((string) $variable))
+        ->filter(fn(string $variable) => filled($variable))
         ->unique()
         ->sort()
         ->values()
         ->all();
-    } catch (Throwable) {
-      $errorMessage = 'Unable to detect template variables.';
+    } catch (Throwable $exception) {
+      report($exception);
+      $errors[] = 'Unable to detect template variables.';
     }
 
     try {
       $phpWord = IOFactory::load($absolutePath, 'Word2007');
       $writer = IOFactory::createWriter($phpWord, 'HTML');
       ob_start();
-      $writer->save('php://output');
-      $previewHtml = ob_get_clean() ?: null;
-    } catch (Throwable) {
-      $errorMessage = $errorMessage ?? 'Unable to render document preview.';
+      try {
+        $writer->save('php://output');
+        $bufferContents = ob_get_contents();
+        $renderedHtml = $bufferContents !== false ? $bufferContents : null;
+      } finally {
+        ob_end_clean();
+      }
+      $sanitizer = new HtmlSanitizer(
+        (new HtmlSanitizerConfig())
+          ->allowSafeElements()
+      );
+
+      $previewHtml = filled($renderedHtml)
+        ? $sanitizer->sanitize($renderedHtml)
+        : null;
+    } catch (Throwable $exception) {
+      report($exception);
+      $errors[] = 'Unable to render document preview.';
     }
 
     return [
       'fileName' => basename($attachmentPath),
       'variables' => $variables,
       'previewHtml' => $previewHtml,
-      'errorMessage' => $errorMessage,
+      'errorMessage' => count($errors) ? implode(' ', array_unique($errors)) : null,
     ];
   }
 
@@ -215,5 +276,33 @@ class Template extends Page implements HasForms, HasTable
     }
 
     return null;
+  }
+
+  protected function isValidDocx(string $absolutePath): bool
+  {
+    if (!str_ends_with(strtolower($absolutePath), '.docx')) {
+      return false;
+    }
+
+    $fileSize = filesize($absolutePath);
+
+    if ($fileSize === false || $fileSize > self::MAX_DOCX_SIZE_BYTES) {
+      return false;
+    }
+
+    $archive = new ZipArchive();
+    $opened = $archive->open($absolutePath);
+
+    if ($opened !== true) {
+      return false;
+    }
+
+    try {
+      $hasDocumentXml = $archive->locateName('word/document.xml') !== false;
+    } finally {
+      $archive->close();
+    }
+
+    return $hasDocumentXml;
   }
 }

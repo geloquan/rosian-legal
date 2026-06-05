@@ -26,6 +26,7 @@
   <x-filament::section heading="Document Preview">
     @if ($previewHtml)
       <div class="max-h-[32rem] overflow-auto rounded-lg border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-gray-900">
+        {{-- Sanitized in Template::generatePreviewData() before rendering. --}}
         {!! $previewHtml !!}
       </div>
     @else
