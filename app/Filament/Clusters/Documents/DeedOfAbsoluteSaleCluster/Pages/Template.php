@@ -209,7 +209,7 @@ class Template extends Page implements HasForms, HasTable
   public function form(Schema $schema): Schema
   {
     return $schema
-      ->statePath('templateData')
+      ->statePath('data')
       ->components([
         Section::make('Creating New Template')
           ->description('Upload the document template to be used.')

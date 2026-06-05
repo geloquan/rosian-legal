@@ -15,7 +15,9 @@ class DeedOfAbsoluteSaleDocumentPartyMember extends Model
   protected $fillable = [
     'document_id',
     'name',
-    'role'
+    'role',
+    'city',
+    'province',
   ];
   protected $casts = [
     'role' => PartyMemberRole::class,

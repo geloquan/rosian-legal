@@ -100,6 +100,8 @@ class Document extends Page implements HasForms, HasTable
       $document->partyMembers()->create([
         'name' => $member['name'],
         'role' => $member['role'],
+        'city' => $member['city'] ?? null,
+        'province' => $member['province'] ?? null,
       ]);
     }
 
@@ -263,6 +265,10 @@ class Document extends Page implements HasForms, HasTable
                     'principal-vendee'  => 'Principal Vendee',
                   ])
                   ->required(),
+                TextInput::make('city')
+                  ->label('City'),
+                TextInput::make('province')
+                  ->label('Province'),
               ])
               ->columns(2)
               ->addActionLabel('Add Party Member')
