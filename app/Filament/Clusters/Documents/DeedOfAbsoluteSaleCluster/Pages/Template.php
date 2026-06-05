@@ -19,6 +19,9 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
+use PhpOffice\PhpWord\TemplateProcessor;
 
 class Template extends Page implements HasForms, HasTable
 {
@@ -74,14 +77,16 @@ class Template extends Page implements HasForms, HasTable
   {
     return $table
       ->query(DeedOfAbsoluteSaleTemplate::query())
+      ->recordAction('viewVariables')
       ->columns([
         TextColumn::make('id')
           ->label('ID')
           ->sortable(),
         TextColumn::make('document_reference_attachment')
           ->label('File')
+          ->formatStateUsing(fn($state) => $this->resolveTemplatePath($state) ?? '—')
           ->limit(40)
-          ->tooltip(fn($state) => $state),
+          ->tooltip(fn($state) => $this->resolveTemplatePath($state)),
         TextColumn::make('created_at')
           ->label('Created At')
           ->since()
@@ -94,6 +99,28 @@ class Template extends Page implements HasForms, HasTable
           ->tooltip(fn($state) => $state),
       ])
       ->recordActions([
+        Action::make('viewVariables')
+          ->label('Variables')
+          ->icon(Heroicon::Eye)
+          ->color('gray')
+          ->modalHeading(fn(DeedOfAbsoluteSaleTemplate $record) => "Template #{$record->id} Variables")
+          ->modalDescription('Detected placeholders from the uploaded DOCX template.')
+          ->modalSubmitAction(false)
+          ->modalCancelActionLabel('Close')
+          ->modalContent(function (DeedOfAbsoluteSaleTemplate $record): HtmlString {
+            $variables = $this->extractTemplateVariables($record);
+
+            if ($variables === []) {
+              return new HtmlString('<p class="text-sm text-gray-600">No template variables detected.</p>');
+            }
+
+            $items = collect($variables)
+              ->map(fn(string $variable) => '<li><code>${' . e($variable) . '}</code></li>')
+              ->implode('');
+
+            return new HtmlString('<div class="text-sm"><p class="mb-2">Detected variables:</p><ul class="list-disc list-inside space-y-1">' . $items . '</ul></div>');
+          })
+          ->action(fn() => null),
         Action::make('delete')
           ->label('Delete')
           ->icon(Heroicon::Trash)
@@ -111,6 +138,55 @@ class Template extends Page implements HasForms, HasTable
               ->send();
           }),
       ]);
+  }
+
+  protected function extractTemplateVariables(DeedOfAbsoluteSaleTemplate $record): array
+  {
+    $relativePath = $this->resolveTemplatePath($record->document_reference_attachment);
+
+    if (blank($relativePath)) {
+      return [];
+    }
+
+    try {
+      $absolutePath = Storage::disk('public')->path($relativePath);
+
+      if (!is_file($absolutePath)) {
+        return [];
+      }
+
+      return collect((new TemplateProcessor($absolutePath))->getVariables())
+        ->filter(fn($variable) => filled($variable))
+        ->map(fn($variable) => (string) $variable)
+        ->unique()
+        ->values()
+        ->all();
+    } catch (\Throwable $exception) {
+      report($exception);
+
+      return [];
+    }
+  }
+
+  protected function resolveTemplatePath(mixed $attachment): ?string
+  {
+    if (filled($attachment) && is_string($attachment)) {
+      return $attachment;
+    }
+
+    if (!is_array($attachment)) {
+      return null;
+    }
+
+    foreach ($attachment as $value) {
+      $resolved = $this->resolveTemplatePath($value);
+
+      if (filled($resolved)) {
+        return $resolved;
+      }
+    }
+
+    return null;
   }
 
   public function form(Schema $schema): Schema

@@ -1,7 +1,7 @@
 <x-filament-panels::page>
   @if($this->showForm)
     <x-filament::section>
-      <form wire:submit="saveDocument">
+      <form wire:submit="saveTemplate">
         {{ $this->form }}
 
         <div class="flex gap-2 mt-6">
