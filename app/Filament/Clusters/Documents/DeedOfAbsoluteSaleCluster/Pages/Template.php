@@ -19,6 +19,8 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use PhpOffice\PhpWord\TemplateProcessor;
@@ -26,6 +28,8 @@ use PhpOffice\PhpWord\TemplateProcessor;
 class Template extends Page implements HasForms, HasTable
 {
   use InteractsWithForms, InteractsWithTable;
+
+  protected const int TEMPLATE_VARIABLE_CACHE_MINUTES = 5;
   protected string $view = 'filament.clusters.documents.deed-of-absolute-sale-cluster.pages.template';
 
   protected static ?string $cluster = DeedOfAbsoluteSaleCluster::class;
@@ -148,26 +152,39 @@ class Template extends Page implements HasForms, HasTable
       return [];
     }
 
-    try {
-      $absolutePath = Storage::disk('public')->path($relativePath);
+    $absolutePath = Storage::disk('public')->path($relativePath);
+    $cacheVersion = $record->updated_at?->timestamp ?? $record->created_at?->timestamp ?? 0;
+    $fileVersion = is_file($absolutePath) ? (string) filemtime($absolutePath) : 'missing';
+    $cacheKey = 'deed-template-variables:' . $record->id . ':' . md5($relativePath . '|' . $cacheVersion . '|' . $fileVersion);
 
-      if (!is_file($absolutePath)) {
+    return Cache::remember($cacheKey, now()->addMinutes(self::TEMPLATE_VARIABLE_CACHE_MINUTES), function () use ($record, $relativePath, $absolutePath) {
+      try {
+        if (!is_file($absolutePath)) {
+          return [];
+        }
+
+        $variables = (new TemplateProcessor($absolutePath))->getVariables();
+        $variables = array_map(static fn($variable) => (string) $variable, $variables);
+        $variables = array_filter($variables, static fn($variable) => filled($variable));
+
+        return array_values(array_unique($variables));
+      } catch (\Throwable $exception) {
+        Log::warning('Failed extracting DOCX template variables.', [
+          'template_id' => $record->id,
+          'template_path' => $relativePath,
+          'error' => $exception->getMessage(),
+        ]);
+
+        report($exception);
+
         return [];
       }
-
-      return collect((new TemplateProcessor($absolutePath))->getVariables())
-        ->filter(fn($variable) => filled($variable))
-        ->map(fn($variable) => (string) $variable)
-        ->unique()
-        ->values()
-        ->all();
-    } catch (\Throwable $exception) {
-      report($exception);
-
-      return [];
-    }
+    });
   }
 
+  /**
+   * Recursively resolves the first valid file path from string or nested array attachment payloads.
+   */
   protected function resolveTemplatePath(mixed $attachment): ?string
   {
     if (filled($attachment) && is_string($attachment)) {
