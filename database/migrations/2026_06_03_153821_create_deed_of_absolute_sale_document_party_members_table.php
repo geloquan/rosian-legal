@@ -19,7 +19,7 @@ return new class extends Migration {
         )
         ->cascadeOnDelete();
       $table->string('name');
-      $table->enum('role', ['vendor', 'vendee', 'attorney-in-fact']);
+      $table->enum('role', ['vendor', 'vendee', 'attorney-in-fact', 'principal-vendor', 'principal-vendee']);
       $table->timestamps();
     });
   }
