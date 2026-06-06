@@ -16,6 +16,7 @@
     "laravel/tinker": "^3.0",
     "phpoffice/phpword": "^1.4",
     "spatie/laravel-permission": "^8.0",
+    "spatie/laravel-settings": "^3.9",
     "tonysm/rich-text-laravel": "^3.11"
   },
   "require-dev": {
