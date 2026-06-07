@@ -303,10 +303,10 @@ class Document extends Page implements HasForms, HasTable
                 Select::make('area_measurement_unit')
                   ->label('Area Measurement Unit')
                   ->options([
-                    'sqm'      => 'Square Meters',
-                    'sqft'     => 'Square Feet',
+                    'sqm' => 'Square Meters',
+                    'sqft' => 'Square Feet',
                     'hectares' => 'Hectares',
-                    'acres'    => 'Acres',
+                    'acres' => 'Acres',
                   ])
                   ->required(),
                 Repeater::make('ordinal_directions')
@@ -317,13 +317,13 @@ class Document extends Page implements HasForms, HasTable
                     Select::make('ordinal_direction')
                       ->label('Ordinal Direction')
                       ->options([
-                        'north'     => 'North',
+                        'north' => 'North',
                         'northeast' => 'Northeast',
-                        'east'      => 'East',
+                        'east' => 'East',
                         'southeast' => 'Southeast',
-                        'south'     => 'South',
+                        'south' => 'South',
                         'southwest' => 'Southwest',
-                        'west'      => 'West',
+                        'west' => 'West',
                         'northwest' => 'Northwest',
                       ])
                       ->required(),
