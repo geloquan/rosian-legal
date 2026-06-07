@@ -33,7 +33,7 @@ class DocumentBuilder
       $template->setComplexValue($key, $value);
     }
 
-    $relativePath = "app/deeds/deed_{$deed->uuid}.docx";
+    $relativePath = "deed-of-absolute-sale-documents/convert/deed_{$deed->uuid}.docx";
     $absolutePath = storage_path('app/public/' . $relativePath);
 
     if (! is_dir(dirname($absolutePath))) {
