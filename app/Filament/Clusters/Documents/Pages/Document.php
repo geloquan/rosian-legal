@@ -104,6 +104,7 @@ class Document extends Page implements HasForms, HasTable
       $document->partyMembers()->create([
         'name' => $member['name'],
         'role' => $member['role'],
+        'gender' => $member['gender'],
         'city' => $member['city'] ?? null,
         'province' => $member['province'] ?? null,
       ]);
