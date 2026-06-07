@@ -84,10 +84,7 @@ The system is built using modern web technologies designed for maintainability, 
 
 * PHP
 * Laravel Framework
-
-### Frontend
-
-* Vue.js
+* Filament
 
 ### Database
 
