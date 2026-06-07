@@ -4,6 +4,7 @@ namespace App\Filament\Clusters\Settings\Pages;
 
 use App\Filament\Clusters\Settings\SettingsCluster;
 use App\NavigationGroup;
+use BackedEnum;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -12,16 +13,16 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 
 class Profile extends Page implements HasForms
 {
   use InteractsWithForms;
+  protected static string | BackedEnum | null $navigationIcon = HeroIcon::User;
 
-  protected static string|null|\BackedEnum $navigationIcon = 'heroicon-o-user';
   protected static ?string $navigationLabel = 'My Profile';
   protected static ?string $title = 'My Profile';
   protected string $view = 'filament.clusters.settings.pages.profile';
-  protected static string | \UnitEnum | null $navigationGroup = NavigationGroup::Settings;
   protected static ?string $cluster = SettingsCluster::class;
 
   public ?array $data = [];

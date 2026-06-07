@@ -9,6 +9,6 @@ use Filament\Support\Icons\Heroicon;
 
 class DeedOfAbsoluteSaleCluster extends Cluster
 {
-  protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSquares2x2;
+  protected static string|BackedEnum|null $navigationIcon = Heroicon::Sparkles;
   protected static ?SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
 }
