@@ -188,6 +188,7 @@ class Document extends Page implements HasForms, HasTable
                 ->map(fn($m) => [
                   'name' => $m->name,
                   'role' => $m->role,
+                  'gender' => $m->gender,
                   'city' => $m->city,
                   'province' => $m->province,
                 ])

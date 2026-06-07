@@ -15,6 +15,7 @@ class DeedOfAbsoluteSaleDocumentPartyMember extends Model
   protected $fillable = [
     'document_id',
     'name',
+    'gender',
     'role',
     'city',
     'province',
