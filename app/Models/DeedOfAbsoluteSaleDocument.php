@@ -22,10 +22,12 @@ class DeedOfAbsoluteSaleDocument extends Model
     'deed_of_absolute_sale_template_id',
     'created_by',
     'locked_at',
+    'exported_document_attachment'
   ];
   protected $casts = [
     'sale_price' => 'decimal:2',
     'deed_of_absolute_sale_template_id' => 'integer',
+    'exported_document_attachment' => 'array',
   ];
 
   protected static function booted(): void
