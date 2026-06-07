@@ -177,21 +177,21 @@ class Document extends Page implements HasForms, HasTable
               ->success()
               ->send();
           }),
-        Action::make('convert')
-          ->label('Convert to PDF')
-          ->icon(Heroicon::DocumentArrowDown)
-          ->color('success')
-          ->action(function (DeedOfAbsoluteSaleDocument $record, DocumentService $service) {
-            $pdfPath = $service->generatePdf($record);
-
-            Notification::make()
-              ->title('Conversion initiated')
-              ->body('The document is being converted to PDF. This may take a moment.')
-              ->success()
-              ->send();
-
-            return response()->download(storage_path('app/public/' . $pdfPath), "deed_of_absolute_sale_{$record->id}.pdf");
-          }),
+//        Action::make('convert')
+//          ->label('Convert to PDF')
+//          ->icon(Heroicon::DocumentArrowDown)
+//          ->color('success')
+//          ->action(function (DeedOfAbsoluteSaleDocument $record, DocumentService $service) {
+//            $pdfPath = $service->generatePdf($record);
+//
+//            Notification::make()
+//              ->title('Conversion initiated')
+//              ->body('The document is being converted to PDF. This may take a moment.')
+//              ->success()
+//              ->send();
+//
+//            return response()->download(storage_path('app/public/' . $pdfPath), "deed_of_absolute_sale_{$record->id}.pdf");
+//          }),
         Action::make('edit')
           ->label('Edit')
           ->icon(Heroicon::PencilSquare)
