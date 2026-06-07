@@ -220,9 +220,9 @@ class Template extends Page implements HasForms, HasTable
               ->disk('public')
               ->directory('deed-of-absolute-sale-documents')
               ->maxSize(10240)
-              ->acceptedFileTypes([
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-              ]),
+//              ->acceptedFileTypes([
+//                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+//              ]),
           ]),
       ]);
   }
