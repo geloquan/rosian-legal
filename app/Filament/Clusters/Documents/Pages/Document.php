@@ -49,8 +49,8 @@ class Document extends Page implements HasForms, HasTable
   public function mount(): void
   {
     $this->form->fill([
-      'party_members'    => [],
-      'parcels_of_land'  => [],
+      'party_members' => [],
+      'parcels_of_land' => [],
     ]);
   }
 
