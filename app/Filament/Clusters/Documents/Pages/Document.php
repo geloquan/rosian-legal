@@ -6,9 +6,11 @@ use App\Filament\Clusters\Documents\DeedOfAbsoluteSaleCluster;
 use App\Models\DeedOfAbsoluteSaleDocument;
 use App\Models\DeedOfAbsoluteSaleTemplate;
 use App\PartyMemberRole;
+use App\Services\Document\DocumentService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -136,7 +138,7 @@ class Document extends Page implements HasForms, HasTable
           ->formatStateUsing(function ($state) {
             $formatter = new NumberToWords();
             $numberTransformer = $formatter->getNumberTransformer('en');
-            return ucwords($numberTransformer->toWords((int) $state));
+            return ucwords($numberTransformer->toWords((int)$state));
           }),
         TextColumn::make('deedOfAbsoluteSaleTemplate.id')
           ->label('Template ID')
@@ -174,6 +176,21 @@ class Document extends Page implements HasForms, HasTable
               ->title($record->locked_at ? 'Record locked' : 'Record unlocked')
               ->success()
               ->send();
+          }),
+        Action::make('convert')
+          ->label('Convert to PDF')
+          ->icon(Heroicon::DocumentArrowDown)
+          ->color('success')
+          ->action(function (DeedOfAbsoluteSaleDocument $record, DocumentService $service) {
+            $pdfPath = $service->generatePdf($record);
+
+            Notification::make()
+              ->title('Conversion initiated')
+              ->body('The document is being converted to PDF. This may take a moment.')
+              ->success()
+              ->send();
+
+            return response()->download(storage_path('app/public/' . $pdfPath), "deed_of_absolute_sale_{$record->id}.pdf");
           }),
         Action::make('edit')
           ->label('Edit')
@@ -224,6 +241,7 @@ class Document extends Page implements HasForms, HasTable
         Section::make('Creating New Document')
           ->description('Fill in the details for the new document.')
           ->schema([
+            Hidden::make('uuid'),
             Text::make('sale_price_in_words')
               ->content(function (Get $get): string {
                 $value = $get('sale_price');
@@ -235,7 +253,7 @@ class Document extends Page implements HasForms, HasTable
                 $numberToWords = new NumberToWords();
                 $transformer = $numberToWords->getNumberTransformer('en');
 
-                return ucwords($transformer->toWords((int) $value)) . ' Pesos Only';
+                return ucwords($transformer->toWords((int)$value)) . ' Pesos Only';
               }),
             TextInput::make('sale_price')
               ->label('Sale Price')
@@ -265,7 +283,17 @@ class Document extends Page implements HasForms, HasTable
                   ->required(),
                 Select::make('role')
                   ->label('Role')
-                  ->options(PartyMemberRole::class)
+                  ->options([
+                    'principal-vendor' => 'Principal Vendor',
+                    'principal-vendee' => 'Principal Vendee',
+                  ])
+                  ->required(),
+                Select::make('gender')
+                  ->label('Gender')
+                  ->options([
+                    'male' => 'Male',
+                    'female' => 'Female',
+                  ])
                   ->required(),
                 TextInput::make('city')
                   ->label('City'),
