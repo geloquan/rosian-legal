@@ -125,6 +125,21 @@ class Template extends Page implements HasForms, HasTable
             return new HtmlString('<div class="text-sm"><p class="mb-2">Detected variables:</p><ul class="list-disc list-inside space-y-1">' . $items . '</ul></div>');
           })
           ->action(fn() => null),
+        Action::make('download')
+          ->label('Download')
+          ->icon(Heroicon::ArrowDownTray)
+          ->color('primary')
+          ->requiresConfirmation()
+          ->modalHeading('Download this template?')
+          ->modalIcon(Heroicon::ArrowDownTray)
+          ->modalDescription('You are about to download the original template file. Do you want to continue?')
+          ->action(function (DeedOfAbsoluteSaleTemplate $record) {
+            return redirect()->away(
+              Storage::disk('public')->url(
+                $this->resolveTemplatePath($record->document_reference_attachment)
+              )
+            );
+          }),
         Action::make('delete')
           ->label('Delete')
           ->icon(Heroicon::Trash)
@@ -132,6 +147,7 @@ class Template extends Page implements HasForms, HasTable
           ->visible(fn() => Auth::user()->hasRole('super-admin'))
           ->requiresConfirmation()
           ->modalHeading('Delete this template?')
+          ->modalIcon(Heroicon::Trash)
           ->modalDescription('This action cannot be undone. Documents referencing this template will be affected.')
           ->action(function (DeedOfAbsoluteSaleTemplate $record) {
             $record->delete();
