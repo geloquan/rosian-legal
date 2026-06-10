@@ -37,7 +37,9 @@ class EditDeedOfAbsoluteSaleDocument extends EditRecord
     return $schema
       ->components([
         Hidden::make('uuid'),
-        Section::make('Base Information')
+
+        Section::make('Document Overview')
+          ->icon(Heroicon::InformationCircle)
           ->schema([
             TextInput::make('sale_price_in_words')
               ->label('Sale Price in Words')
@@ -54,14 +56,10 @@ class EditDeedOfAbsoluteSaleDocument extends EditRecord
                   $set('sale_price_in_words', '—');
                   return;
                 }
-
                 $numberToWords = new NumberToWords();
                 $transformer = $numberToWords->getNumberTransformer('en');
                 $set('sale_price_in_words', ucwords($transformer->toWords((int)$state)) . ' Pesos Only');
               }),
-          ]),
-        Section::make('Word Document Reference')
-          ->schema([
             Select::make('deed_of_absolute_sale_template_id')
               ->label('Template')
               ->options(
@@ -78,12 +76,10 @@ class EditDeedOfAbsoluteSaleDocument extends EditRecord
               ->required(),
           ]),
 
-
         Section::make('Party Members')
           ->icon(Heroicon::Users)
-
           ->schema([
-            Repeater::make('partyMembers')
+            Repeater::make('party_members')
               ->label('Party Members')
               ->hint('Two principals required: one Principal Vendor and one Principal Vendee.')
               ->hintColor('warning')
@@ -97,16 +93,16 @@ class EditDeedOfAbsoluteSaleDocument extends EditRecord
                   ->label('Role')
                   ->options([
                     'Vendor' => [
-                      'principal-vendor'        => 'Principal Vendor',
+                      'principal-vendor'         => 'Principal Vendor',
                       'principal-vendor-husband' => 'Vendor (Husband)',
-                      'principal-vendor-wife'   => 'Vendor (Wife)',
-                      'vendor-attorney-in-fact' => 'Vendor Attorney-in-Fact',
+                      'principal-vendor-wife'    => 'Vendor (Wife)',
+                      'vendor-attorney-in-fact'  => 'Vendor Attorney-in-Fact',
                     ],
                     'Vendee' => [
-                      'principal-vendee'        => 'Principal Vendee',
+                      'principal-vendee'         => 'Principal Vendee',
                       'principal-vendee-husband' => 'Vendee (Husband)',
-                      'principal-vendee-wife'   => 'Vendee (Wife)',
-                      'vendee-attorney-in-fact' => 'Vendee Attorney-in-Fact',
+                      'principal-vendee-wife'    => 'Vendee (Wife)',
+                      'vendee-attorney-in-fact'  => 'Vendee Attorney-in-Fact',
                     ],
                   ])
                   ->required(),
@@ -130,7 +126,8 @@ class EditDeedOfAbsoluteSaleDocument extends EditRecord
               ->reorderable(false),
           ]),
 
-        Section::make('Items for Sale')
+        Section::make('Parcels of Land')
+          ->icon(Heroicon::Tag)
           ->schema([
             Repeater::make('parcels_of_land')
               ->label('Parcels of Land')
@@ -140,6 +137,19 @@ class EditDeedOfAbsoluteSaleDocument extends EditRecord
                   ->label('Transfer Certificate Number')
                   ->required()
                   ->columnSpan(2),
+                TextInput::make('area_measurement')
+                  ->label('Area Measurement')
+                  ->required()
+                  ->numeric(),
+                Select::make('area_measurement_unit')
+                  ->label('Unit')
+                  ->options([
+                    'sqm'      => 'Square Meters (sqm)',
+                    'sqft'     => 'Square Feet (sqft)',
+                    'hectares' => 'Hectares (ha)',
+                    'acres'    => 'Acres (ac)',
+                  ])
+                  ->required(),
                 TextInput::make('barangay')
                   ->label('Barangay')
                   ->required(),
@@ -152,19 +162,6 @@ class EditDeedOfAbsoluteSaleDocument extends EditRecord
                 TextInput::make('island')
                   ->label('Island')
                   ->required(),
-                TextInput::make('area_measurement')
-                  ->label('Area Measurement')
-                  ->required()
-                  ->numeric(),
-                Select::make('area_measurement_unit')
-                  ->label('Area Measurement Unit')
-                  ->options([
-                    'sqm' => 'Square Meters',
-                    'sqft' => 'Square Feet',
-                    'hectares' => 'Hectares',
-                    'acres' => 'Acres',
-                  ])
-                  ->required(),
                 Repeater::make('ordinal_directions')
                   ->label('Ordinal Directions')
                   ->columns(4)
@@ -173,13 +170,13 @@ class EditDeedOfAbsoluteSaleDocument extends EditRecord
                     Select::make('ordinal_direction')
                       ->label('Ordinal Direction')
                       ->options([
-                        'north' => 'North',
+                        'north'     => 'North',
                         'northeast' => 'Northeast',
-                        'east' => 'East',
+                        'east'      => 'East',
                         'southeast' => 'Southeast',
-                        'south' => 'South',
+                        'south'     => 'South',
                         'southwest' => 'Southwest',
-                        'west' => 'West',
+                        'west'      => 'West',
                         'northwest' => 'Northwest',
                       ])
                       ->required(),
@@ -203,7 +200,9 @@ class EditDeedOfAbsoluteSaleDocument extends EditRecord
                       ->numeric()
                       ->minValue(0)
                       ->extraInputAttributes(['min' => 0, 'step' => 1]),
-                  ]),
+                  ])
+                  ->addActionLabel('Add Ordinal Direction')
+                  ->defaultItems(0),
               ])
               ->addActionLabel('Add Parcel of Land')
               ->defaultItems(0)
@@ -211,14 +210,6 @@ class EditDeedOfAbsoluteSaleDocument extends EditRecord
           ]),
       ])
       ->columns(1);
-  }
-
-  protected function getFormActions(): array
-  {
-    return [
-      $this->getSaveFormAction(),
-      $this->getCancelFormAction(),
-    ];
   }
 
   protected function mutateFormDataBeforeFill(array $data): array
@@ -229,6 +220,50 @@ class EditDeedOfAbsoluteSaleDocument extends EditRecord
       $data['sale_price_in_words'] = ucwords($transformer->toWords((int)$data['sale_price'])) . ' Pesos Only';
     }
 
+    $data['party_members'] = $this->record
+      ->partyMembers()
+      ->get()
+      ->map(fn($m) => [
+        'name'     => $m->name,
+        'role'     => $m->role instanceof \BackedEnum ? $m->role->value : $m->role,
+        'gender'   => $m->gender,
+        'city'     => $m->city,
+        'province' => $m->province,
+      ])
+      ->toArray();
+
     return $data;
+  }
+
+  protected function mutateFormDataBeforeSave(array $data): array
+  {
+    unset($data['party_members']);
+
+    return $data;
+  }
+
+  protected function afterSave(): void
+  {
+    $partyMembers = $this->data['party_members'] ?? [];
+
+    $this->record->partyMembers()->delete();
+
+    foreach ($partyMembers as $member) {
+      $this->record->partyMembers()->create([
+        'name'     => $member['name'],
+        'role'     => $member['role'],
+        'gender'   => $member['gender'],
+        'city'     => $member['city'] ?? null,
+        'province' => $member['province'] ?? null,
+      ]);
+    }
+  }
+
+  protected function getFormActions(): array
+  {
+    return [
+      $this->getSaveFormAction(),
+      $this->getCancelFormAction(),
+    ];
   }
 }
