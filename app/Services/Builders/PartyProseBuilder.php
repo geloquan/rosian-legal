@@ -6,7 +6,6 @@ use App\Models\DeedOfAbsoluteSaleDocumentPartyMember;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use PhpOffice\PhpWord\Element\TextRun;
-use PhpOffice\PhpWord\Shared\Converter;
 
 abstract class PartyProseBuilder
 {
@@ -45,6 +44,15 @@ abstract class PartyProseBuilder
   // ---------------------------------------------------------------
   private function plural(Collection $members, ?DeedOfAbsoluteSaleDocumentPartyMember $aif = null): TextRun
   {
+    $principal = $members->first(fn ($m) => !str_ends_with($m->role->value, '-husband')
+      && !str_ends_with($m->role->value, '-wife'));
+    $spouse    = $members->first(fn ($m) => str_ends_with($m->role->value, '-husband')
+      || str_ends_with($m->role->value, '-wife'));
+
+    if ($principal && $spouse) {
+      return $this->couple($principal, $spouse, $aif);
+    }
+
     $textRun   = new TextRun();
     $names     = $this->joinNames($members);
     $residence = $this->commonResidence($members);
@@ -56,14 +64,41 @@ abstract class PartyProseBuilder
     $textRun->addText($residence, $this->normal());
     $textRun->addText(', Philippines hereinafter referred to as the "', $this->normal());
     $textRun->addText($label, $this->bold());
-    $textRun->addText('" represented by ' . $pronoun . ' Attorney-in-Fact ', $this->normal());
 
     if ($aif) {
-      $textRun->addText(
-        '" represented by ' . $pronoun . ' attorney-in-fact ',
-        $this->normal()
-      );
+      $textRun->addText('" represented by ' . $pronoun . ' attorney-in-fact ', $this->normal());
       $textRun->addText(strtoupper($aif->name), $this->bold());
+    } else {
+      $textRun->addText('"', $this->normal());
+    }
+
+    $textRun->addText(';', $this->normal());
+
+    return $textRun;
+  }
+
+  private function couple(
+    DeedOfAbsoluteSaleDocumentPartyMember $principal,
+    DeedOfAbsoluteSaleDocumentPartyMember $spouse,
+    ?DeedOfAbsoluteSaleDocumentPartyMember $aif = null
+  ): TextRun {
+    $textRun = new TextRun();
+    $pronoun = $this->pronoun($principal);
+    $label   = $this->label();
+
+    $textRun->addText($principal->name, $this->bold());
+    $textRun->addText(', of legal age, Filipino, married to ', $this->normal());
+    $textRun->addText($spouse->name, $this->bold());
+    $textRun->addText(', and a resident of ', $this->normal());
+    $textRun->addText($this->residence($principal), $this->normal());
+    $textRun->addText(', Philippines, hereinafter referred to as the "', $this->normal());
+    $textRun->addText($label, $this->bold());
+
+    if ($aif) {
+      $textRun->addText('" represented by ' . $pronoun . ' attorney-in-fact ', $this->normal());
+      $textRun->addText($aif->name, $this->bold());
+    } else {
+      $textRun->addText('"', $this->normal());
     }
 
     $textRun->addText(';', $this->normal());
