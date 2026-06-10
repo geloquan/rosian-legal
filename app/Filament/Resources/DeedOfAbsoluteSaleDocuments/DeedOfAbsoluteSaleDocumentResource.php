@@ -27,6 +27,7 @@ use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Html;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontFamily;
@@ -39,6 +40,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
 use NumberToWords\NumberToWords;
+use PhpOffice\PhpWord\Element\Text;
 
 class DeedOfAbsoluteSaleDocumentResource extends Resource
 {
@@ -74,79 +76,202 @@ class DeedOfAbsoluteSaleDocumentResource extends Resource
     return $schema
       ->components([
         Section::make('Document Overview')
+          ->description(function ($record) {
+            return $record->uuid;
+          })
+          ->icon(Heroicon::InformationCircle)
           ->columns(3)
           ->schema([
-            TextEntry::make('uuid')
-              ->label('UUID')
-              ->copyable()
-              ->copyMessage('UUID copied')
-              ->fontFamily(FontFamily::Mono)
-              ->columnSpan(2),
+//            TextEntry::make('uuid')
+//              ->label('UUID')
+//              ->copyable()
+//              ->copyMessage('UUID copied')
+//              ->fontFamily(FontFamily::Mono)
+//              ->columnSpan(2),
             TextEntry::make('locked_at')
               ->label('Status')
-              ->placeholder('Unlocked')
+              ->placeholder('N/A')
               ->badge()
-              ->color(fn ($state) => $state ? 'danger' : 'success')
-              ->formatStateUsing(fn ($state) => $state ? 'Locked' : 'Active'),
+              ->color(fn($state) => $state ? 'danger' : 'success')
+              ->formatStateUsing(fn($state) => $state ? 'Locked' : 'Active'),
             TextEntry::make('sale_price')
               ->label('Sale Price')
               ->money('PHP')
-              ->weight(FontWeight::Bold),
+              ->weight(FontWeight::Bold)
+              ->size('lg'),
             TextEntry::make('sale_price_in_words')
               ->label('Sale Price in Words')
               ->getStateUsing(function ($record) {
                 if (blank($record->sale_price)) return '—';
                 $numberToWords = new NumberToWords();
                 $transformer = $numberToWords->getNumberTransformer('en');
-                return ucwords($transformer->toWords((int) $record->sale_price)) . ' Pesos Only';
+                return ucwords($transformer->toWords((int)$record->sale_price)) . ' Pesos Only';
               })
-              ->columnSpanFull(),
+              ->columnSpanFull()
+              ->size('lg'),
             TextEntry::make('deedOfAbsoluteSaleTemplate.id')
               ->label('Template')
               ->icon(Heroicon::ArrowTopRightOnSquare)
-              ->url(fn ($record) => ViewDeedOfAbsoluteSaleTemplate::getUrl([
+              ->url(fn($record) => ViewDeedOfAbsoluteSaleTemplate::getUrl([
                 'record' => $record->deedOfAbsoluteSaleTemplate->id,
-              ])),
+              ]))
+              ->tooltip(fn($record) => "View Template #{$record->deedOfAbsoluteSaleTemplate->id}"),
           ]),
 
         Section::make('Party Members')
+          ->afterHeader(fn($record) => Schema::start([
+            \Filament\Schemas\Components\Text::make(
+              (string) $record->partyMembers()->count() . ' ' . str('member')->plural($record->partyMembers()->count())
+            )
+              ->badge()
+              ->color('primary')
+              ->visible($record->partyMembers()->count() > 0),
+          ]))
+          ->icon(Heroicon::Users)
           ->schema([
-            RepeatableEntry::make('party_members')
+            TextEntry::make('empty')
               ->label('')
+              ->state('No party members recorded.')
+              ->color('gray')
+              ->visible(fn($record) => $record->partyMembers()->count() === 0),
+
+            // ── VENDOR GROUP ─────────────────────────────────────────
+            Section::make('Vendor')
+              ->icon(Heroicon::Banknotes)
+              ->compact()
+              ->visible(fn($record) => $record->partyMembers()
+                ->whereIn('role', [
+                  'principal-vendor',
+                  'principal-vendor-husband',
+                  'principal-vendor-wife',
+                  'vendor-attorney-in-fact',
+                ])->exists())
               ->schema([
-                TextEntry::make('name')
-                  ->label('Name')
-                  ->weight(FontWeight::Medium),
-                TextEntry::make('role')
-                  ->label('Role')
-                  ->badge()
-                  ->color(fn ($state) => match ($state) {
-                    'principal-vendor' => 'warning',
-                    'principal-vendee' => 'info',
-                    default => 'gray',
-                  })
-                  ->formatStateUsing(fn ($state) => match ($state) {
-                    'principal-vendor' => 'Principal Vendor',
-                    'principal-vendee' => 'Principal Vendee',
-                    default => $state,
-                  }),
-                TextEntry::make('gender')
-                  ->label('Gender')
-                  ->formatStateUsing(fn ($state) => ucfirst($state))
-                  ->badge()
-                  ->color('gray'),
-                TextEntry::make('city')
-                  ->label('City')
-                  ->placeholder('—'),
-                TextEntry::make('province')
-                  ->label('Province')
-                  ->placeholder('—'),
-              ])
-              ->columns(5),
+                RepeatableEntry::make('vendorMembers')
+                  ->label('')
+                  ->getStateUsing(fn($record) => $record->partyMembers()
+                    ->whereIn('role', [
+                      'principal-vendor',
+                      'principal-vendor-husband',
+                      'principal-vendor-wife',
+                      'vendor-attorney-in-fact',
+                    ])
+                    ->get()
+                    ->values()
+                    ->toArray())
+                  ->schema([
+                    TextEntry::make('name')
+                      ->label('Name')
+                      ->weight(FontWeight::Medium),
+                    TextEntry::make('role')
+                      ->label('Role')
+                      ->badge()
+                      ->color(fn($state) => match ($state) {
+                        'principal-vendor'         => 'warning',
+                        'principal-vendor-husband' => 'warning',
+                        'principal-vendor-wife'    => 'warning',
+                        'vendor-attorney-in-fact'  => 'gray',
+                        default                    => 'gray',
+                      })
+                      ->formatStateUsing(fn($state) => match ($state) {
+                        'principal-vendor'         => 'Principal Vendor',
+                        'principal-vendor-husband' => 'Vendor (Husband)',
+                        'principal-vendor-wife'    => 'Vendor (Wife)',
+                        'vendor-attorney-in-fact'  => 'Attorney-in-Fact',
+                        default                    => $state,
+                      }),
+                    TextEntry::make('gender')
+                      ->label('Gender')
+                      ->formatStateUsing(fn($state) => ucfirst($state))
+                      ->badge()
+                      ->color('gray'),
+                    TextEntry::make('city')
+                      ->label('City')
+                      ->placeholder('—'),
+                    TextEntry::make('province')
+                      ->label('Province')
+                      ->placeholder('—'),
+                  ])
+                  ->columns(3),
+              ]),
+
+            // ── VENDEE GROUP ─────────────────────────────────────────
+            Section::make('Vendee')
+              ->icon(Heroicon::ShoppingBag)
+              ->compact()
+              ->visible(fn($record) => $record->partyMembers()
+                ->whereIn('role', [
+                  'principal-vendee',
+                  'principal-vendee-husband',
+                  'principal-vendee-wife',
+                  'vendee-attorney-in-fact',
+                ])->exists())
+              ->schema([
+                RepeatableEntry::make('vendeeMembers')
+                  ->label('')
+                  ->getStateUsing(fn($record) => $record->partyMembers()
+                    ->whereIn('role', [
+                      'principal-vendee',
+                      'principal-vendee-husband',
+                      'principal-vendee-wife',
+                      'vendee-attorney-in-fact',
+                    ])
+                    ->get()
+                    ->values()
+                    ->toArray())
+                  ->schema([
+                    TextEntry::make('name')
+                      ->label('Name')
+                      ->weight(FontWeight::Medium),
+                    TextEntry::make('role')
+                      ->label('Role')
+                      ->badge()
+                      ->color(fn($state) => match ($state) {
+                        'principal-vendee'         => 'info',
+                        'principal-vendee-husband' => 'info',
+                        'principal-vendee-wife'    => 'info',
+                        'vendee-attorney-in-fact'  => 'gray',
+                        default                    => 'gray',
+                      })
+                      ->formatStateUsing(fn($state) => match ($state) {
+                        'principal-vendee'         => 'Principal Vendee',
+                        'principal-vendee-husband' => 'Vendee (Husband)',
+                        'principal-vendee-wife'    => 'Vendee (Wife)',
+                        'vendee-attorney-in-fact'  => 'Attorney-in-Fact',
+                        default                    => $state,
+                      }),
+                    TextEntry::make('gender')
+                      ->label('Gender')
+                      ->formatStateUsing(fn($state) => ucfirst($state))
+                      ->badge()
+                      ->color('gray'),
+                    TextEntry::make('city')
+                      ->label('City')
+                      ->placeholder('—'),
+                    TextEntry::make('province')
+                      ->label('Province')
+                      ->placeholder('—'),
+                  ])
+                  ->columns(3),
+              ]),
           ]),
 
         Section::make('Parcels of Land')
+          ->afterHeader(fn($record) => Schema::start([
+            \Filament\Schemas\Components\Text::make(
+              (string) $record->parcelsOfLand()->count() . ' ' . str('parcel')->plural($record->parcelsOfLand()->count())
+            )
+              ->badge()
+              ->color('primary')
+              ->visible($record->parcelsOfLand()->count() > 0),
+          ]))
+          ->icon(Heroicon::Tag)
           ->schema([
+            TextEntry::make('empty')
+              ->label('')
+              ->state('No parcels of land recorded.')
+              ->color('gray')
+              ->visible(fn($record) => $record->parcelsOfLand()->count() === 0),
             RepeatableEntry::make('parcels_of_land')
               ->label('')
               ->schema([
@@ -156,7 +281,7 @@ class DeedOfAbsoluteSaleDocumentResource extends Resource
                   ->columnSpan(2),
                 TextEntry::make('area_measurement')
                   ->label('Area')
-                  ->formatStateUsing(fn ($state, $record) => $state . ' ' . match ($record['area_measurement_unit'] ?? '') {
+                  ->formatStateUsing(fn($state, $record) => $state . ' ' . match ($record['area_measurement_unit'] ?? '') {
                       'sqm' => 'sqm',
                       'sqft' => 'sqft',
                       'hectares' => 'ha',
@@ -176,10 +301,10 @@ class DeedOfAbsoluteSaleDocumentResource extends Resource
                       ->label('Direction')
                       ->badge()
                       ->color('info')
-                      ->formatStateUsing(fn ($state) => ucfirst($state)),
+                      ->formatStateUsing(fn($state) => ucfirst($state)),
                     TextEntry::make('along_aline_range')
                       ->label('A-Line Range')
-                      ->formatStateUsing(fn ($state) => is_array($state)
+                      ->formatStateUsing(fn($state) => is_array($state)
                         ? ($state[0] ?? '—') . ' → ' . ($state[1] ?? '—')
                         : '—'
                       ),
@@ -188,16 +313,25 @@ class DeedOfAbsoluteSaleDocumentResource extends Resource
                   ])
                   ->columns(4),
               ])
-              ->columns(4),
+              ->columns(4)
+              ->visible(fn($record) => $record->parcelsOfLand()->count() > 0),
           ]),
 
-        Section::make('Metadata')
+        Section::make('More Details')
           ->columns(4)
           ->collapsed()
           ->schema([
             TextEntry::make('created_by')
               ->label('Created By')
-              ->numeric(),
+              ->formatStateUsing(function ($state) {
+                $user = \App\Models\User::find($state);
+                return $user ? $user->name : 'Unknown User';
+              })
+              ->tooltip(function ($state) {
+                $user = \App\Models\User::find($state);
+                $roles = $user ? implode(', ', $user->roles->pluck('name')->toArray()) : 'No roles found';
+                return "Roles: {$roles}";
+              }),
             TextEntry::make('created_at')
               ->label('Created')
               ->dateTime()
@@ -209,11 +343,12 @@ class DeedOfAbsoluteSaleDocumentResource extends Resource
             TextEntry::make('deleted_at')
               ->label('Deleted At')
               ->dateTime()
-              ->visible(fn (DeedOfAbsoluteSaleDocument $record): bool => $record->trashed())
+              ->visible(fn(DeedOfAbsoluteSaleDocument $record): bool => $record->trashed())
               ->placeholder('—'),
           ]),
       ]);
   }
+
   public static function table(Table $table): Table
   {
     return $table
@@ -298,20 +433,21 @@ class DeedOfAbsoluteSaleDocumentResource extends Resource
         ]),
       ]);
   }
-
   public static function getPages(): array
   {
     return [
       'index' => ManageDeedOfAbsoluteSaleDocuments::route('/'),
       'create' => CreateDeedOfAbsoluteSaleDocument::route('/create'),
-      'view'  => ViewDeedOfAbsoluteSaleDocument::route('/{record}'),
+      'view' => ViewDeedOfAbsoluteSaleDocument::route('/{record}'),
       'edit' => EditDeedOfAbsoluteSaleDocument::route('/{record}/edit'),
     ];
   }
+
   public static function getRecordRouteKeyName(): string
   {
     return 'uuid';
   }
+
   public static function getRecordRouteBindingEloquentQuery(): Builder
   {
     return parent::getRecordRouteBindingEloquentQuery()

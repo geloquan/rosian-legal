@@ -78,6 +78,7 @@ class DeedOfAbsoluteSaleTemplateResource extends Resource
     return $table
       ->columns([
         TextColumn::make('id')
+          ->label('ID')
           ->sortable(),
         TextColumn::make('created_by')
           ->formatStateUsing(function ($state) {
@@ -89,6 +90,11 @@ class DeedOfAbsoluteSaleTemplateResource extends Resource
             $roles = $user ? implode(', ', $user->roles->pluck('name')->toArray()) : 'No roles found';
             return $roles;
           }),
+        TextColumn::make('documents_count')
+          ->label('Usage Count')
+          ->counts('documents')
+          ->sortable()
+          ->badge(),
         TextColumn::make('created_at')
           ->dateTime()
           ->sortable()
@@ -109,7 +115,8 @@ class DeedOfAbsoluteSaleTemplateResource extends Resource
         BulkActionGroup::make([
           DeleteBulkAction::make(),
         ]),
-      ]);
+      ])
+      ->defaultSort('documents_count', 'desc');
   }
 
   public static function getPages(): array

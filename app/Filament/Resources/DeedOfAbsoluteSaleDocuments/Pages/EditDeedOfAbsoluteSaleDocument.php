@@ -27,7 +27,7 @@ class EditDeedOfAbsoluteSaleDocument extends EditRecord
     return [
       ViewAction::make(),
       DeleteAction::make()
-       ->visible(fn() => $this->record->trashed() === false || $this->record->locked_at === null),
+        ->visible(fn() => $this->record->trashed() === false || $this->record->locked_at === null),
       RestoreAction::make(),
     ];
   }
@@ -68,8 +68,8 @@ class EditDeedOfAbsoluteSaleDocument extends EditRecord
                 DeedOfAbsoluteSaleTemplate::query()
                   ->with('documents')
                   ->get()
-                  ->sortByDesc(fn ($template) => $template->documents?->count())
-                  ->mapWithKeys(fn ($template) => [
+                  ->sortByDesc(fn($template) => $template->documents?->count())
+                  ->mapWithKeys(fn($template) => [
                     $template->id => "Template #{$template->id} — {$template->created_at->format('M d, Y')}"
                   ])
               )
@@ -77,9 +77,13 @@ class EditDeedOfAbsoluteSaleDocument extends EditRecord
               ->preload()
               ->required(),
           ]),
-        Section::make('Name of Persons Involved')
+
+
+        Section::make('Party Members')
+          ->icon(Heroicon::Users)
+
           ->schema([
-            Repeater::make('party_members')
+            Repeater::make('partyMembers')
               ->label('Party Members')
               ->hint('Two principals required: one Principal Vendor and one Principal Vendee.')
               ->hintColor('warning')
@@ -87,31 +91,45 @@ class EditDeedOfAbsoluteSaleDocument extends EditRecord
               ->schema([
                 TextInput::make('name')
                   ->label('Name')
-                  ->required(),
+                  ->required()
+                  ->columnSpan(2),
                 Select::make('role')
                   ->label('Role')
                   ->options([
-                    'principal-vendor' => 'Principal Vendor',
-                    'principal-vendee' => 'Principal Vendee',
+                    'Vendor' => [
+                      'principal-vendor'        => 'Principal Vendor',
+                      'principal-vendor-husband' => 'Vendor (Husband)',
+                      'principal-vendor-wife'   => 'Vendor (Wife)',
+                      'vendor-attorney-in-fact' => 'Vendor Attorney-in-Fact',
+                    ],
+                    'Vendee' => [
+                      'principal-vendee'        => 'Principal Vendee',
+                      'principal-vendee-husband' => 'Vendee (Husband)',
+                      'principal-vendee-wife'   => 'Vendee (Wife)',
+                      'vendee-attorney-in-fact' => 'Vendee Attorney-in-Fact',
+                    ],
                   ])
                   ->required(),
                 Select::make('gender')
                   ->label('Gender')
                   ->options([
-                    'male' => 'Male',
+                    'male'   => 'Male',
                     'female' => 'Female',
                   ])
                   ->required(),
                 TextInput::make('city')
-                  ->label('City'),
+                  ->label('City')
+                  ->placeholder('—'),
                 TextInput::make('province')
-                  ->label('Province'),
+                  ->label('Province')
+                  ->placeholder('—'),
               ])
-              ->columns(2)
+              ->columns(3)
               ->addActionLabel('Add Party Member')
               ->defaultItems(0)
               ->reorderable(false),
           ]),
+
         Section::make('Items for Sale')
           ->schema([
             Repeater::make('parcels_of_land')
