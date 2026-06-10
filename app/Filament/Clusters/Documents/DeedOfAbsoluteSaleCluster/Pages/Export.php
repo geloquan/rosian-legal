@@ -124,7 +124,15 @@ class Export extends Page implements HasTable, HasForms
           ->modalDescription('This will regenerate the document using the latest data and overwrite the cached file. The old version will be replaced. Continue?')
           ->modalSubmitActionLabel('Yes, rebuild and export')
           ->action(function (DeedOfAbsoluteSaleDocument $record) {
-            // rebuild logic here
+            $pdfPath = app(DocumentService::class)->generatePdf($record, true);
+
+            Notification::make()
+              ->title('Document regenerated')
+              ->body('The document has been regenerated with the latest data and will be downloaded.')
+              ->success()
+              ->send();
+
+            $this->js("window.open('" . Storage::url($pdfPath) . "', '_blank')");
           }),
       ]);
   }

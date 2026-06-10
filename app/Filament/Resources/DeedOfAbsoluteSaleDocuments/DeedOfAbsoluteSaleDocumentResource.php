@@ -109,13 +109,14 @@ class DeedOfAbsoluteSaleDocumentResource extends Resource
               })
               ->columnSpanFull()
               ->size('lg'),
-            TextEntry::make('deedOfAbsoluteSaleTemplate.id')
+            TextEntry::make('deedOfAbsoluteSaleTemplate.document_reference_attachment')
               ->label('Template')
               ->icon(Heroicon::ArrowTopRightOnSquare)
               ->url(fn($record) => ViewDeedOfAbsoluteSaleTemplate::getUrl([
                 'record' => $record->deedOfAbsoluteSaleTemplate->id,
               ]))
-              ->tooltip(fn($record) => "View Template #{$record->deedOfAbsoluteSaleTemplate->id}"),
+              ->tooltip(fn($record) => "View Template #{$record->deedOfAbsoluteSaleTemplate->id}")
+              ->columnSpanFull(),
           ]),
 
         Section::make('Party Members')
@@ -421,7 +422,7 @@ class DeedOfAbsoluteSaleDocumentResource extends Resource
         EditAction::make()
           ->visible(fn(DeedOfAbsoluteSaleDocument $record) => !$record->locked_at),
         DeleteAction::make()
-          ->visible(fn(DeedOfAbsoluteSaleDocument $record) => !$record->locked_at),
+          ->visible(fn(DeedOfAbsoluteSaleDocument $record) => !$record->locked_at && auth()->user()->hasRole('super-admin')),
         ForceDeleteAction::make(),
         RestoreAction::make(),
       ])

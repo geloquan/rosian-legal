@@ -27,7 +27,7 @@ class EditDeedOfAbsoluteSaleDocument extends EditRecord
     return [
       ViewAction::make(),
       DeleteAction::make()
-        ->visible(fn() => $this->record->trashed() === false || $this->record->locked_at === null),
+        ->visible(fn() => $this->record->trashed() === false || $this->record->locked_at === null || auth()->user()->hasRole('super-admin')),
       RestoreAction::make(),
     ];
   }
