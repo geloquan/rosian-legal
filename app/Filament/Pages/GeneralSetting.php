@@ -21,6 +21,7 @@ class GeneralSetting extends SettingsPage
   protected static string $settings = GeneralSettings::class;
   protected static ?string $cluster = SettingsCluster::class;
   protected static ?string $title = 'General';
+
   public function form(Schema $schema): Schema
   {
     return $schema
@@ -59,10 +60,24 @@ class GeneralSetting extends SettingsPage
                 'EUR' => 'Euro (EUR)',
               ])
               ->required(),
+
+            Select::make('measurement_unit')
+              ->label('Land Area Unit')
+              ->options([
+                'sqm' => 'Square Meter (sqm)',
+                'sqft' => 'Square Foot (sq ft)',
+                'ha' => 'Hectare (ha)',
+                'acre' => 'Acre',
+              ])
+              ->required(),
           ])->columns(2),
 
         Section::make('Location')
           ->schema([
+            TextInput::make('island')
+              ->label('Island Region')
+              ->required()
+              ->columnSpanFull(),
             TextInput::make('city')
               ->label('City')
               ->required()
@@ -71,7 +86,8 @@ class GeneralSetting extends SettingsPage
             TextInput::make('province')
               ->label('Province')
               ->required()
-              ->maxLength(100),
+              ->maxLength(100)
+              ->columnSpanFull(),
           ])->columns(2),
       ]);
   }
