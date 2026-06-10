@@ -4,6 +4,7 @@ namespace App\Filament\Resources\DeedOfAbsoluteSaleDocuments\Pages;
 
 use App\Filament\Resources\DeedOfAbsoluteSaleDocuments\DeedOfAbsoluteSaleDocumentResource;
 use App\Models\DeedOfAbsoluteSaleTemplate;
+use App\Settings\GeneralSettings;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
@@ -34,6 +35,8 @@ class EditDeedOfAbsoluteSaleDocument extends EditRecord
 
   public function form(Schema $schema): Schema
   {
+    $settings = app(GeneralSettings::class);
+
     return $schema
       ->components([
         Hidden::make('uuid'),
@@ -155,10 +158,12 @@ class EditDeedOfAbsoluteSaleDocument extends EditRecord
                   ->required(),
                 TextInput::make('city_municipality')
                   ->label('City/Municipality')
-                  ->required(),
+                  ->required()
+                  ->default($settings->city),
                 TextInput::make('province')
                   ->label('Province')
-                  ->required(),
+                  ->required()
+                  ->default($settings->province),
                 TextInput::make('island')
                   ->label('Island')
                   ->required(),
