@@ -3,12 +3,15 @@
 namespace App\Services\Builders;
 
 use App\Models\DeedOfAbsoluteSaleDocumentPartyMember;
+use App\Services\Builders\Concerns\HasIndent;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use PhpOffice\PhpWord\Element\TextRun;
 
 abstract class PartyProseBuilder
 {
+  use HasIndent;
+
   abstract protected function label(): string;
 
 
@@ -54,6 +57,7 @@ abstract class PartyProseBuilder
     }
 
     $textRun   = new TextRun();
+    $this->indent($textRun);
     $names     = $this->joinNames($members);
     $residence = $this->commonResidence($members);
     $pronoun   = $this->groupPronoun($members);
@@ -83,6 +87,7 @@ abstract class PartyProseBuilder
     ?DeedOfAbsoluteSaleDocumentPartyMember $aif = null
   ): TextRun {
     $textRun = new TextRun();
+    $this->indent($textRun);
     $pronoun = $this->pronoun($principal);
     $label   = $this->label();
 
@@ -115,6 +120,7 @@ abstract class PartyProseBuilder
   private function singular(DeedOfAbsoluteSaleDocumentPartyMember $member, ?DeedOfAbsoluteSaleDocumentPartyMember $aif = null): TextRun
   {
     $textRun = new TextRun();
+    $this->indent($textRun);
     $pronoun = $this->pronoun($member);
     $label   = $this->label();
 
