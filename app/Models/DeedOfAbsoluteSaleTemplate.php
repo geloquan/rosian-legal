@@ -52,4 +52,10 @@ class DeedOfAbsoluteSaleTemplate extends Model
   {
     return $this->belongsTo(User::class, 'created_by');
   }
+  protected static function booted(): void
+  {
+    static::creating(function ($model) {
+      $model->created_by ??= auth()->id();
+    });
+  }
 }
