@@ -3,22 +3,10 @@
 namespace App\Services\Document\DeedOfAbsoluteSale;
 
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use RuntimeException;
-use TCPDF;
 
 class PdfConverter
 {
-  private const PAGE_FORMAT   = 'A4';
-  private const PAGE_UNIT     = 'mm';
-  private const MARGIN_LEFT   = 25;
-  private const MARGIN_RIGHT  = 25;
-  private const MARGIN_TOP    = 25;
-  private const MARGIN_BOTTOM = 25;
-  private const FONT_FAMILY   = 'times';
-  private const FONT_SIZE     = 12;
-
   public function convert(string $docxDiskPath): string
   {
     $absolutePath = storage_path('app/public/' . $docxDiskPath);
@@ -33,6 +21,10 @@ class PdfConverter
 
     Pdf::loadHtml($html)
       ->setPaper('a4', 'portrait')
+      ->setOptions([
+        'isHtml5ParserEnabled' => true,
+        'defaultFont'          => 'times',
+      ])
       ->save($pdfAbsPath);
 
     if (! file_exists($pdfAbsPath)) {
@@ -41,6 +33,7 @@ class PdfConverter
 
     return $pdfDiskPath;
   }
+
   private function extractHtml(string $absolutePath): string
   {
     $phpWord    = \PhpOffice\PhpWord\IOFactory::load($absolutePath);
@@ -50,30 +43,43 @@ class PdfConverter
     $htmlWriter->save('php://output');
     $rawHtml = ob_get_clean();
 
-    preg_match('/<body[^>]*>(.*?)<\/body>/si', $rawHtml, $matches);
-
-    return $matches[1] ?? $rawHtml;
+    return $this->injectIndentStyles($rawHtml);
   }
 
-  private function makePdf(): TCPDF
+  private function injectIndentStyles(string $html): string
   {
-    $pdf = new TCPDF(
-      'P',
-      self::PAGE_UNIT,
-      self::PAGE_FORMAT,
-      true,
-      'UTF-8',
-      false
+    // Inject 1-inch page margins and reset body spacing
+    $pageStyle = '
+      <style>
+        @page { margin: 1in; }
+        body  { margin: 0; padding: 0; }
+      </style>
+    ';
+
+    $html = str_replace('</head>', $pageStyle . '</head>', $html);
+
+    // Duplicate margin-left as padding-left on <p> tags (DomPDF renders it more reliably)
+    $html = preg_replace_callback(
+      '/<p([^>]*style="([^"]*)"[^>]*)>/i',
+      function (array $m) {
+        $tag   = $m[1];
+        $style = $m[2];
+
+        if (preg_match('/margin-left\s*:\s*([\d.]+)(pt|px|cm|mm|in)/i', $style, $indent)) {
+          $value = $indent[1] . $indent[2];
+          $style .= ";padding-left:{$value}";
+          $tag   = str_replace($m[2], $style, $tag);
+        }
+
+        return "<p{$tag}>";
+      },
+      $html
     );
 
-    $pdf->SetCreator('DeedOfAbsoluteSale');
-    $pdf->SetMargins(self::MARGIN_LEFT, self::MARGIN_TOP, self::MARGIN_RIGHT);
-    $pdf->SetAutoPageBreak(true, self::MARGIN_BOTTOM);
-    $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE);
-    $pdf->setPrintHeader(false);
-    $pdf->setPrintFooter(false);
+    // Convert literal tab characters to fixed-width inline spans
+    $html = preg_replace('/\t/', '<span style="display:inline-block;width:2em;"></span>', $html);
 
-    return $pdf;
+    return $html;
   }
 
   private function pdfDiskPath(string $docxDiskPath): string
