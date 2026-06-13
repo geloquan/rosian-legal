@@ -2,6 +2,7 @@
 
 namespace App\Services\Document\DeedOfAbsoluteSale;
 
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -23,26 +24,19 @@ class PdfConverter
     $absolutePath = storage_path('app/public/' . $docxDiskPath);
 
     if (! file_exists($absolutePath)) {
-      throw new RuntimeException(
-        "Source file not found for PDF conversion: {$absolutePath}"
-      );
+      throw new RuntimeException("Source file not found: {$absolutePath}");
     }
 
     $html        = $this->extractHtml($absolutePath);
-    $pdf         = $this->makePdf();
     $pdfDiskPath = $this->pdfDiskPath($docxDiskPath);
+    $pdfAbsPath  = storage_path('app/public/' . $pdfDiskPath);
 
-    $pdf->AddPage();
-    $pdf->writeHTML($html, true, false, true, false, '');
+    Pdf::loadHtml($html)
+      ->setPaper('a4', 'portrait')
+      ->save($pdfAbsPath);
 
-    $pdfAbsolutePath = storage_path('app/public/' . $pdfDiskPath);
-
-    $pdf->Output($pdfAbsolutePath, 'F');
-
-    if (! file_exists($pdfAbsolutePath)) {
-      throw new RuntimeException(
-        "PDF file not found after conversion: {$pdfDiskPath}"
-      );
+    if (! file_exists($pdfAbsPath)) {
+      throw new RuntimeException("PDF not found after conversion: {$pdfDiskPath}");
     }
 
     return $pdfDiskPath;
