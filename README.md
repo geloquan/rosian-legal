@@ -100,6 +100,12 @@ The architecture is designed to support modular template management, scalable do
 
 ---
 
+# Challenges and Considerations
+Key challenges addressed during development include:
+* Ensuring that during development of automated document generation that english grammar and legal terminology are preserved in generated documents, while still allowing for dynamic content insertion.
+
+---
+
 # Security
 
 This project follows industry-standard security practices informed by:
