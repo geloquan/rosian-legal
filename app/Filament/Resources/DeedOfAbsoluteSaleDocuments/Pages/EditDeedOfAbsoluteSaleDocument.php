@@ -77,7 +77,9 @@ class EditDeedOfAbsoluteSaleDocument extends EditRecord
               ->searchable()
               ->preload()
               ->required(),
-          ]),
+          ])
+          ->columns(3)
+          ->columnSpanFull(),
 
         Section::make('Party Members')
           ->icon(Heroicon::Users)
@@ -92,6 +94,13 @@ class EditDeedOfAbsoluteSaleDocument extends EditRecord
                   ->label('Name')
                   ->required()
                   ->columnSpan(2),
+                Select::make('gender')
+                  ->label('Gender')
+                  ->options([
+                    'male'   => 'Male',
+                    'female' => 'Female',
+                  ])
+                  ->required(),
                 Select::make('role')
                   ->label('Role')
                   ->options([
@@ -108,26 +117,22 @@ class EditDeedOfAbsoluteSaleDocument extends EditRecord
                       'vendee-attorney-in-fact'  => 'Vendee Attorney-in-Fact',
                     ],
                   ])
-                  ->required(),
-                Select::make('gender')
-                  ->label('Gender')
-                  ->options([
-                    'male'   => 'Male',
-                    'female' => 'Female',
-                  ])
+                  ->columnSpan(2)
                   ->required(),
                 TextInput::make('city')
                   ->label('City')
                   ->placeholder('—'),
                 TextInput::make('province')
                   ->label('Province')
-                  ->placeholder('—'),
+                  ->placeholder('—')
+                  ->columnSpan(2),
               ])
               ->columns(3)
               ->addActionLabel('Add Party Member')
               ->defaultItems(0)
               ->reorderable(false),
-          ]),
+          ])
+          ->columnSpan(1),
 
         Section::make('Parcels of Land')
           ->icon(Heroicon::Tag)
@@ -212,9 +217,10 @@ class EditDeedOfAbsoluteSaleDocument extends EditRecord
               ->addActionLabel('Add Parcel of Land')
               ->defaultItems(0)
               ->live(),
-          ]),
+          ])
+          ->columnSpan(1),
       ])
-      ->columns(1);
+      ->columns(2);
   }
 
   protected function mutateFormDataBeforeFill(array $data): array
