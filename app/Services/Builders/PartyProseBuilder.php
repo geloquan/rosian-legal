@@ -57,7 +57,7 @@ abstract class PartyProseBuilder
     }
 
     $textRun   = new TextRun();
-    $this->indent($textRun);
+    $textRun->addText("\t");
     $names     = $this->joinNames($members);
     $residence = $this->commonResidence($members);
     $pronoun   = $this->groupPronoun($members);
@@ -87,7 +87,7 @@ abstract class PartyProseBuilder
     ?DeedOfAbsoluteSaleDocumentPartyMember $aif = null
   ): TextRun {
     $textRun = new TextRun();
-    $this->indent($textRun);
+    $textRun->addText("\t");
     $pronoun = $this->pronoun($principal);
     $label   = $this->label();
 
@@ -120,7 +120,7 @@ abstract class PartyProseBuilder
   private function singular(DeedOfAbsoluteSaleDocumentPartyMember $member, ?DeedOfAbsoluteSaleDocumentPartyMember $aif = null): TextRun
   {
     $textRun = new TextRun();
-    $this->indent($textRun);
+    $textRun->addText("\t");
     $pronoun = $this->pronoun($member);
     $label   = $this->label();
 
